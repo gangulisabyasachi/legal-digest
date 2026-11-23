@@ -35,6 +35,7 @@ export interface IJudgment {
   // Document Links & Full Text
   pdfUrl?: string; // Local path or cloud URL
   pdfFileName?: string;
+  pdfBase64?: string; // Base64 buffer for serverless persistence (Vercel)
   fullText?: string; // Extracted full judgment text
   
   // Editorial and Publishing Workflow

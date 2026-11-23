@@ -24,17 +24,23 @@ export async function POST(req: NextRequest) {
 
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    const pdfBase64 = buffer.toString('base64');
 
-    // Save PDF locally to public/uploads directory for direct serving
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    const judgmentId = `jdg_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
+    let pdfUrl = `/api/judgments/${judgmentId}/pdf`;
+
+    // Try saving locally for local development cache (safely ignore EROFS on Vercel serverless)
+    try {
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const filePath = path.join(uploadsDir, safeFileName);
+      fs.writeFileSync(filePath, buffer);
+    } catch (fsErr) {
+      console.log('[Ingest] Running on serverless environment (Vercel), stored directly in MongoDB Atlas.');
     }
-
-    const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-    const filePath = path.join(uploadsDir, safeFileName);
-    fs.writeFileSync(filePath, buffer);
-    const pdfUrl = `/uploads/${safeFileName}`;
 
     console.log(`[Ingest] Parsing PDF: ${file.name} (${(buffer.length / 1024).toFixed(1)} KB)`);
 
@@ -47,7 +53,6 @@ export async function POST(req: NextRequest) {
     const aiExtracted = await extractHeadnoteWithGrok(text, file.name);
 
     // 3. Create a Draft Judgment in MongoDB Atlas ready for editorial review
-    const judgmentId = `jdg_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
     const newJudgment: IJudgment = {
       id: judgmentId,
       caseTitle: aiExtracted.caseTitle || file.name.replace(/\.[^/.]+$/, ''),
@@ -68,6 +73,7 @@ export async function POST(req: NextRequest) {
       casesReferred: aiExtracted.casesReferred || [],
       pdfUrl,
       pdfFileName: file.name,
+      pdfBase64,
       fullText: text,
       status: 'under_review',
       isLandmark: false,

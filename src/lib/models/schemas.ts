@@ -36,6 +36,7 @@ const JudgmentSchema = new Schema<IJudgment>(
     ],
     pdfUrl: { type: String },
     pdfFileName: { type: String },
+    pdfBase64: { type: String },
     fullText: { type: String },
     status: { type: String, enum: ['draft', 'under_review', 'published'], default: 'under_review', index: true },
     isLandmark: { type: Boolean, default: false, index: true },
