@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db/mongoose';
 import { JudgmentModel, HistoryModel } from '@/lib/models/schemas';
 import { getCurrentUser } from '@/lib/auth/jwt';
+import { triggerSitemapRegeneration } from '@/lib/sitemap-generator';
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -50,6 +51,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     const updated = await JudgmentModel.findOneAndUpdate({ id: params.id }, updates, { new: true }).lean();
 
+    triggerSitemapRegeneration();
+
     return NextResponse.json({ success: true, judgment: updated });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to update judgment in MongoDB Atlas' }, { status: 500 });
@@ -65,6 +68,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
     await connectToDatabase();
     await JudgmentModel.deleteOne({ id: params.id });
+
+    triggerSitemapRegeneration();
 
     return NextResponse.json({ success: true, message: 'Judgment deleted successfully' });
   } catch (error) {

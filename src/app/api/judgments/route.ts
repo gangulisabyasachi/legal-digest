@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/db/mongoose';
 import { JudgmentModel } from '@/lib/models/schemas';
 import { getCurrentUser } from '@/lib/auth/jwt';
 import { IJudgment } from '@/lib/models/Judgment';
+import { triggerSitemapRegeneration } from '@/lib/sitemap-generator';
 
 export async function GET(req: NextRequest) {
   try {
@@ -113,6 +114,9 @@ export async function POST(req: NextRequest) {
     };
 
     const saved = await JudgmentModel.create(newJudgment);
+
+    // Auto-update sitemap when a new judgment is published
+    triggerSitemapRegeneration();
 
     return NextResponse.json({ success: true, judgment: saved }, { status: 201 });
   } catch (error: any) {

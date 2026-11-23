@@ -5,6 +5,7 @@ import { extractHeadnoteWithGrok } from '@/lib/ai/grokClient';
 import { connectToDatabase } from '@/lib/db/mongoose';
 import { JudgmentModel } from '@/lib/models/schemas';
 import { IJudgment } from '@/lib/models/Judgment';
+import { triggerSitemapRegeneration } from '@/lib/sitemap-generator';
 import fs from 'fs';
 import path from 'path';
 
@@ -84,6 +85,9 @@ export async function POST(req: NextRequest) {
 
     await connectToDatabase();
     const created = await JudgmentModel.create(newJudgment);
+
+    // Auto-update sitemap when a new judgment is ingested
+    triggerSitemapRegeneration();
 
     console.log(`[Ingest] Judgment created in MongoDB Atlas with ID: ${judgmentId}. Ready for review.`);
 
