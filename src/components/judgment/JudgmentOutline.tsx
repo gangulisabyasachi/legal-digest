@@ -1,15 +1,23 @@
 'use client';
 
 import React from 'react';
-import { BookOpen, Scale, FileText, CheckCircle, Bookmark, ExternalLink } from 'lucide-react';
+import { BookOpen, Scale, FileText, CheckCircle, Bookmark, ExternalLink, Download } from 'lucide-react';
 
 interface JudgmentOutlineProps {
   activeSection?: string;
   onSelectSection?: (sectionId: string) => void;
   hasFullText?: boolean;
+  pdfUrl?: string;
+  pdfFileName?: string;
 }
 
-export default function JudgmentOutline({ activeSection = 'headnote', onSelectSection, hasFullText }: JudgmentOutlineProps) {
+export default function JudgmentOutline({
+  activeSection = 'headnote',
+  onSelectSection,
+  hasFullText,
+  pdfUrl,
+  pdfFileName,
+}: JudgmentOutlineProps) {
   const sections = [
     { id: 'catchwords', label: '1. Catchwords & Subjects' },
     { id: 'headnote', label: '2. Headnote & Digest' },
@@ -54,8 +62,24 @@ export default function JudgmentOutline({ activeSection = 'headnote', onSelectSe
         ))}
       </nav>
 
-      <div className="mt-8 pt-4 border-t border-gray-200 space-y-2">
-        <p className="text-[11px] text-gray-500 leading-tight">
+      {/* Direct Quick PDF Download from Outline */}
+      {pdfUrl && (
+        <div className="mt-5 pt-3 border-t border-gray-200">
+          <a
+            href={pdfUrl}
+            download={pdfFileName || 'official_judgment.pdf'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-2.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-[11px] font-medium transition-colors"
+          >
+            <Download className="w-3.5 h-3.5 text-[#E25822]" />
+            <span className="truncate">Download Official PDF</span>
+          </a>
+        </div>
+      )}
+
+      <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
+        <p className="text-[11px] text-gray-400 leading-tight">
           Juridica Digest headnotes follow the Supreme Court Reports (SCR) editorial standard.
         </p>
       </div>

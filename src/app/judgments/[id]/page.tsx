@@ -88,7 +88,11 @@ export default function JudgmentDetailPage() {
       {/* 3-Column ScienceDirect Academic Reading View */}
       <div className="flex flex-col lg:flex-row gap-8 items-start">
         {/* Left Column: Sticky Outline */}
-        <JudgmentOutline hasFullText={Boolean(judgment.fullText)} />
+        <JudgmentOutline
+          hasFullText={Boolean(judgment.fullText)}
+          pdfUrl={judgment.pdfUrl}
+          pdfFileName={judgment.pdfFileName}
+        />
 
         {/* Center Column: Scholarly Legal Headnote Reading Pane */}
         <HeadnoteView

@@ -81,6 +81,9 @@ export default function ReviewJudgmentPage() {
           holding,
           status: targetStatus,
           isLandmark,
+          pdfUrl: judgment?.pdfUrl,
+          pdfFileName: judgment?.pdfFileName,
+          fullText: judgment?.fullText,
         }),
       });
 

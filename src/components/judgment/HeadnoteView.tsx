@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { IJudgment } from '@/lib/models/Judgment';
-import { Scale, ChevronRight, FileText, CheckCircle2, AlertCircle, Quote, ExternalLink, Bookmark } from 'lucide-react';
+import { Scale, ChevronRight, FileText, CheckCircle2, AlertCircle, Quote, ExternalLink, Bookmark, Download, Copy } from 'lucide-react';
 
 interface HeadnoteViewProps {
   judgment: IJudgment;
@@ -34,7 +34,7 @@ export default function HeadnoteView({ judgment, onOpenBookmark, onOpenCitation,
         </h1>
 
         {/* Citations & Landmark Badge */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex flex-wrap items-center gap-2 text-xs mb-4">
           <span className="font-mono bg-gray-100 text-gray-800 px-2.5 py-1 rounded border border-gray-200 font-medium">
             Citation: {judgment.citation}
           </span>
@@ -47,6 +47,63 @@ export default function HeadnoteView({ judgment, onOpenBookmark, onOpenCitation,
             <span className="bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded font-semibold text-[11px] border border-amber-300">
               Landmark Precedent
             </span>
+          )}
+        </div>
+
+        {/* PROMINENT SCIENCEDIRECT ACTION TOOLBAR (Visible immediately at top of page) */}
+        <div className="flex flex-wrap items-center gap-2.5 pt-4 border-t border-gray-100">
+          {judgment.pdfUrl ? (
+            <a
+              href={judgment.pdfUrl}
+              download={judgment.pdfFileName || `${judgment.caseTitle.slice(0, 30)}.pdf`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#E25822] hover:bg-[#c94918] text-white font-semibold text-xs rounded transition-colors shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download Official PDF</span>
+            </a>
+          ) : (
+            <button
+              disabled
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-400 font-medium text-xs rounded cursor-not-allowed"
+            >
+              <Download className="w-4 h-4" />
+              <span>PDF Not Available</span>
+            </button>
+          )}
+
+          <button
+            onClick={onOpenBookmark}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-xs rounded font-medium border transition-colors ${
+              isBookmarked
+                ? 'bg-[#007398]/10 text-[#007398] border-[#007398]'
+                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current text-[#007398]' : ''}`} />
+            <span>{isBookmarked ? 'Saved to Brief' : 'Save to Folder'}</span>
+          </button>
+
+          <button
+            onClick={onOpenCitation}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 rounded text-xs font-medium transition-colors"
+          >
+            <Copy className="w-3.5 h-3.5 text-gray-500" />
+            <span>Copy Citation</span>
+          </button>
+
+          {judgment.fullText && (
+            <button
+              onClick={() => {
+                setShowFullText(true);
+                document.getElementById('fulltext')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-xs font-medium transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5 text-gray-600" />
+              <span>View Source Text</span>
+            </button>
           )}
         </div>
       </div>
