@@ -32,27 +32,27 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/search?court=Supreme Court" className="hover:text-[#007398] transition-colors">
+                <Link href="/search?q=Supreme Court" className="hover:text-[#007398] transition-colors">
                   Supreme Court of India
                 </Link>
               </li>
               <li>
-                <Link href="/search?court=High Court of Delhi" className="hover:text-[#007398] transition-colors">
+                <Link href="/search?q=High Court of Delhi" className="hover:text-[#007398] transition-colors">
                   Delhi High Court Reports
                 </Link>
               </li>
               <li>
-                <Link href="/search?court=High Court of Bombay" className="hover:text-[#007398] transition-colors">
+                <Link href="/search?q=High Court of Bombay" className="hover:text-[#007398] transition-colors">
                   Bombay High Court Rulings
                 </Link>
               </li>
               <li>
-                <Link href="/search?catchword=CONSTITUTIONAL LAW" className="hover:text-[#007398] transition-colors">
+                <Link href="/search?q=CONSTITUTIONAL LAW" className="hover:text-[#007398] transition-colors">
                   Constitutional Bench Landmarks
                 </Link>
               </li>
               <li>
-                <Link href="/search?statute=Arbitration" className="hover:text-[#007398] transition-colors">
+                <Link href="/search?q=Arbitration" className="hover:text-[#007398] transition-colors">
                   Commercial & Arbitration Digest
                 </Link>
               </li>

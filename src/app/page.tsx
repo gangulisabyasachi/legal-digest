@@ -11,9 +11,14 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [judgments, setJudgments] = useState<IJudgment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMac, setIsMac] = useState(false);
 
   useEffect(() => {
-    fetch('/api/judgments?status=published')
+    setIsMac(/(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent));
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/judgments?status=published&limit=5')
       .then((res) => res.json())
       .then((data) => {
         if (data.judgments) setJudgments(data.judgments);
@@ -64,12 +69,16 @@ export default function HomePage() {
               <div className="relative flex-1 flex items-center">
                 <Search className="w-5 h-5 text-gray-400 absolute left-4" />
                 <input
+                  id="hero-search-input"
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search citation (e.g. 2017 INSC 672), party name, statute, judge, or ratio..."
-                  className="w-full pl-12 pr-4 py-3 text-sm text-gray-900 placeholder-gray-400 bg-transparent focus:outline-none"
+                  className="w-full pl-12 pr-16 py-3 text-sm text-gray-900 placeholder-gray-400 bg-transparent focus:outline-none"
                 />
+                <div className="absolute right-3 hidden sm:flex items-center text-[10px] font-mono text-gray-400 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded pointer-events-none">
+                  {isMac ? '⌘K' : 'Ctrl+K'}
+                </div>
               </div>
               <button
                 type="submit"
@@ -135,7 +144,7 @@ export default function HomePage() {
             href="/search"
             className="text-xs font-semibold text-[#007398] hover:underline flex items-center gap-1"
           >
-            <span>View All Judgments</span>
+            <span>Search Case Law</span>
             <ChevronRight className="w-4 h-4" />
           </Link>
         </div>

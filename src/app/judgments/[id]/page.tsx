@@ -7,6 +7,7 @@ import HeadnoteView from '@/components/judgment/HeadnoteView';
 import MetadataSidebar from '@/components/judgment/MetadataSidebar';
 import BookmarkModal from '@/components/judgment/BookmarkModal';
 import CitationExportModal from '@/components/judgment/CitationExportModal';
+import JudgmentNotFound from '@/components/judgment/JudgmentNotFound';
 import { IJudgment } from '@/lib/models/Judgment';
 import { Scale, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -58,20 +59,7 @@ export default function JudgmentDetailPage() {
   }
 
   if (error || !judgment) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 py-16 text-center space-y-4">
-        <Scale className="w-10 h-10 text-gray-400 mx-auto" />
-        <h2 className="text-xl font-bold text-gray-900 font-serif">Judgment Not Found</h2>
-        <p className="text-xs text-gray-500">The requested judgment record may have been moved or unpublished.</p>
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#007398] text-white rounded text-xs font-medium"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          Back to Digest Search
-        </Link>
-      </div>
-    );
+    return <JudgmentNotFound judgmentId={id} />;
   }
 
   return (

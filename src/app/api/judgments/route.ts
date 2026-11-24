@@ -8,12 +8,34 @@ import { triggerSitemapRegeneration } from '@/lib/sitemap-generator';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const query = searchParams.get('q')?.toLowerCase() || '';
+    const query = searchParams.get('q')?.toLowerCase().trim() || '';
     const court = searchParams.get('court');
     const year = searchParams.get('year');
     const statute = searchParams.get('statute')?.toLowerCase();
     const catchword = searchParams.get('catchword')?.toLowerCase();
     const status = searchParams.get('status') || 'published';
+    const limit = searchParams.get('limit') ? parseInt(searchParams.get('limit')!, 10) : undefined;
+
+    // Defense-in-depth: Never dump the full database on unauthenticated/public queries without search criteria or explicit limit
+    if (status !== 'all') {
+      if (searchParams.has('q') && query.length < 3) {
+        return NextResponse.json({
+          success: false,
+          message: 'Please enter at least 3 characters in the search box to search something.',
+          count: 0,
+          judgments: [],
+        });
+      }
+
+      if (!query && !catchword && !statute && !court && !year && !limit) {
+        return NextResponse.json({
+          success: false,
+          message: 'Please enter at least 3 characters in the search box to search something.',
+          count: 0,
+          judgments: [],
+        });
+      }
+    }
 
     await connectToDatabase();
 
@@ -35,7 +57,12 @@ export async function GET(req: NextRequest) {
       mongoFilter.catchwords = { $regex: catchword, $options: 'i' };
     }
 
-    let judgments = await JudgmentModel.find(mongoFilter).sort({ dateOfJudgment: -1 }).lean();
+    let queryBuilder = JudgmentModel.find(mongoFilter).sort({ dateOfJudgment: -1 });
+    if (limit && limit > 0) {
+      queryBuilder = queryBuilder.limit(limit);
+    }
+
+    let judgments = await queryBuilder.lean();
 
     // In-memory filter for flexible regex across text/statute/query
     if (query) {

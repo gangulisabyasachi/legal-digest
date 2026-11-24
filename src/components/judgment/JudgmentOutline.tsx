@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { BookOpen, Scale, FileText, CheckCircle, Bookmark, ExternalLink, Download } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { BookOpen, Download } from 'lucide-react';
 
 interface JudgmentOutlineProps {
   activeSection?: string;
@@ -12,29 +12,103 @@ interface JudgmentOutlineProps {
 }
 
 export default function JudgmentOutline({
-  activeSection = 'headnote',
+  activeSection,
   onSelectSection,
   hasFullText,
   pdfUrl,
   pdfFileName,
 }: JudgmentOutlineProps) {
-  const sections = [
-    { id: 'catchwords', label: '1. Catchwords & Subjects' },
-    { id: 'headnote', label: '2. Headnote & Digest' },
-    { id: 'ratio', label: '3. Ratio Decidendi' },
-    { id: 'issues', label: '4. Questions of Law' },
-    { id: 'disposition', label: '5. Operative Holding' },
-    { id: 'statutes', label: '6. Statutes & Sections' },
-    { id: 'precedents', label: '7. Cases Referred' },
-    ...(hasFullText ? [{ id: 'fulltext', label: '8. Full Judgment Text' }] : []),
-  ];
+  const sections = useMemo(
+    () => [
+      { id: 'catchwords', label: '1. Catchwords & Subjects' },
+      { id: 'headnote', label: '2. Headnote & Digest' },
+      { id: 'ratio', label: '3. Ratio Decidendi' },
+      { id: 'issues', label: '4. Questions of Law' },
+      { id: 'disposition', label: '5. Operative Holding' },
+      { id: 'statutes', label: '6. Statutes & Sections' },
+      { id: 'precedents', label: '7. Cases Referred' },
+      ...(hasFullText ? [{ id: 'fulltext', label: '8. Full Judgment Text' }] : []),
+    ],
+    [hasFullText]
+  );
+
+  const [activeId, setActiveId] = useState<string>(activeSection || 'catchwords');
+  const isManualScrolling = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (activeSection) {
+      setActiveId(activeSection);
+    }
+  }, [activeSection]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (isManualScrolling.current) return;
+
+      const topOffset = 140; // Pixels from top of viewport (below sticky header)
+      let current = '';
+
+      // Check if user is scrolled near the bottom of the page
+      const isAtBottom =
+        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 60;
+
+      const validSections = sections.filter((s) => document.getElementById(s.id));
+
+      if (isAtBottom && validSections.length > 0) {
+        current = validSections[validSections.length - 1].id;
+      } else {
+        for (const sec of validSections) {
+          const el = document.getElementById(sec.id);
+          if (el) {
+            const rect = el.getBoundingClientRect();
+            if (rect.top <= topOffset) {
+              current = sec.id;
+            }
+          }
+        }
+      }
+
+      if (current) {
+        setActiveId(current);
+        onSelectSection?.(current);
+      } else if (validSections.length > 0 && window.scrollY < 200) {
+        setActiveId(validSections[0].id);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, [sections, onSelectSection]);
 
   const handleClick = (id: string) => {
+    setActiveId(id);
     onSelectSection?.(id);
+    isManualScrolling.current = true;
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+
     const element = document.getElementById(id);
     if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const headerOffset = 90;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth',
+      });
     }
+
+    scrollTimeoutRef.current = setTimeout(() => {
+      isManualScrolling.current = false;
+    }, 700);
   };
 
   return (
@@ -47,19 +121,23 @@ export default function JudgmentOutline({
       </div>
 
       <nav className="space-y-1">
-        {sections.map((sec) => (
-          <button
-            key={sec.id}
-            onClick={() => handleClick(sec.id)}
-            className={`w-full text-left px-2.5 py-1.5 rounded transition-colors block text-[12px] truncate ${
-              activeSection === sec.id
-                ? 'bg-[#007398]/10 text-[#007398] font-semibold border-l-2 border-[#007398]'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            {sec.label}
-          </button>
-        ))}
+        {sections.map((sec) => {
+          const isActive = activeId === sec.id;
+          return (
+            <button
+              key={sec.id}
+              onClick={() => handleClick(sec.id)}
+              aria-current={isActive ? 'true' : undefined}
+              className={`w-full text-left px-2.5 py-1.5 rounded transition-all duration-150 block text-[12px] truncate ${
+                isActive
+                  ? 'bg-[#007398]/10 text-[#007398] font-bold border-l-2 border-[#007398] pl-3'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 font-medium'
+              }`}
+            >
+              {sec.label}
+            </button>
+          );
+        })}
       </nav>
 
       {/* Direct Quick PDF Download from Outline */}

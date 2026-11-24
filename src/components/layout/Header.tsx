@@ -1,9 +1,61 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Search, Bookmark, Folder, Shield, LogOut, User, Scale, BookOpen, ChevronDown } from 'lucide-react';
+import QuickSearchModal from '@/components/search/QuickSearchModal';
+
+function NavLinks({ pathname }: { pathname: string }) {
+  const searchParams = useSearchParams();
+  const q = searchParams.get('q')?.toLowerCase().trim() || '';
+
+  const isSearchActive = pathname === '/search' && !q;
+  const isSupremeCourtActive = pathname === '/search' && q === 'supreme court';
+  const isHighCourtActive = pathname === '/search' && (q === 'high court' || q.includes('high court'));
+  const isWorkspaceActive = pathname === '/workspace';
+
+  const linkClass = (isActive: boolean) =>
+    `px-3 py-1.5 rounded transition-all text-xs flex items-center gap-1.5 ${
+      isActive
+        ? 'bg-[#007398] text-white font-semibold shadow-xs'
+        : 'text-gray-200 hover:text-white hover:bg-white/10 font-medium'
+    }`;
+
+  return (
+    <nav className="hidden md:flex items-center space-x-1 pl-4 border-l border-white/20 text-sm">
+      <Link
+        href="/search"
+        aria-current={isSearchActive ? 'page' : undefined}
+        className={linkClass(isSearchActive)}
+      >
+        Search Judgments
+      </Link>
+      <Link
+        href="/search?q=Supreme Court"
+        aria-current={isSupremeCourtActive ? 'page' : undefined}
+        className={linkClass(isSupremeCourtActive)}
+      >
+        Supreme Court
+      </Link>
+      <Link
+        href="/search?q=High Court"
+        aria-current={isHighCourtActive ? 'page' : undefined}
+        className={linkClass(isHighCourtActive)}
+      >
+        High Courts
+      </Link>
+      <Link
+        href="/workspace"
+        aria-current={isWorkspaceActive ? 'page' : undefined}
+        className={linkClass(isWorkspaceActive)}
+      >
+        <Folder className={`w-3.5 h-3.5 ${isWorkspaceActive ? 'text-white' : 'text-[#00A3D9]'}`} />
+        My Workspace
+      </Link>
+    </nav>
+  );
+}
 
 interface AuthUser {
   id: string;
@@ -18,8 +70,47 @@ export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    setIsMac(/(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent));
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+
+        // If on search page, focus on-page search input
+        if (pathname === '/search') {
+          const pageInput = document.getElementById('search-page-input') as HTMLInputElement | null;
+          if (pageInput && document.activeElement !== pageInput) {
+            pageInput.focus();
+            pageInput.select();
+            return;
+          }
+        }
+
+        // If on home page, focus hero search input
+        if (pathname === '/') {
+          const heroInput = document.getElementById('hero-search-input') as HTMLInputElement | null;
+          if (heroInput && document.activeElement !== heroInput) {
+            heroInput.focus();
+            heroInput.select();
+            return;
+          }
+        }
+
+        // Otherwise or if already focused, toggle the Quick Search Modal
+        setQuickSearchOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [pathname]);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -33,13 +124,6 @@ export default function Header() {
       })
       .catch(() => setUser(null));
   }, [pathname]);
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -73,57 +157,46 @@ export default function Header() {
             </Link>
 
             {/* Quick Navigation Links */}
-            <nav className="hidden md:flex items-center space-x-1 pl-4 border-l border-white/20 text-sm">
-              <Link
-                href="/search"
-                className={`px-3 py-1.5 rounded text-gray-200 hover:text-white hover:bg-white/10 transition-colors ${
-                  pathname === '/search' ? 'bg-white/10 text-white font-medium' : ''
-                }`}
-              >
-                Browse Judgments
-              </Link>
-              <Link
-                href="/search?court=Supreme Court"
-                className="px-3 py-1.5 rounded text-gray-200 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                Supreme Court
-              </Link>
-              <Link
-                href="/search?court=High Court"
-                className="px-3 py-1.5 rounded text-gray-200 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                High Courts
-              </Link>
-              <Link
-                href="/workspace"
-                className={`px-3 py-1.5 rounded flex items-center gap-1 text-gray-200 hover:text-white hover:bg-white/10 transition-colors ${
-                  pathname === '/workspace' ? 'bg-white/10 text-white font-medium' : ''
-                }`}
-              >
-                <Folder className="w-3.5 h-3.5 text-[#00A3D9]" />
-                My Workspace
-              </Link>
-            </nav>
+            <Suspense
+              fallback={
+                <nav className="hidden md:flex items-center space-x-1 pl-4 border-l border-white/20 text-sm">
+                  <span className="px-3 py-1.5 rounded text-gray-200 text-xs">Search Judgments</span>
+                  <span className="px-3 py-1.5 rounded text-gray-200 text-xs">Supreme Court</span>
+                  <span className="px-3 py-1.5 rounded text-gray-200 text-xs">High Courts</span>
+                  <span className="px-3 py-1.5 rounded text-gray-200 text-xs">My Workspace</span>
+                </nav>
+              }
+            >
+              <NavLinks pathname={pathname} />
+            </Suspense>
           </div>
 
-          {/* Quick Search in Navbar (if not on home) */}
-          {pathname !== '/' && (
-            <form onSubmit={handleSearchSubmit} className="hidden lg:flex items-center flex-1 max-w-md mx-6">
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search citation, judge, statute, ratio..."
-                  className="w-full bg-[#001B2E] text-white text-xs rounded pl-8 pr-3 py-1.5 border border-white/20 focus:outline-none focus:border-[#007398] placeholder-gray-400"
-                />
-                <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5" />
-              </div>
-            </form>
-          )}
+          {/* Quick Search Trigger in Navbar */}
+          <button
+            type="button"
+            onClick={() => setQuickSearchOpen(true)}
+            className="hidden sm:flex items-center flex-1 max-w-sm mx-4 bg-[#001B2E] text-gray-300 hover:text-white hover:border-[#007398] text-xs rounded pl-3 pr-2 py-1.5 border border-white/20 transition-all group cursor-pointer"
+            title={`Search judgments (${isMac ? '⌘K' : 'Ctrl+K'})`}
+          >
+            <Search className="w-3.5 h-3.5 text-gray-400 group-hover:text-[#007398] mr-2 flex-shrink-0" />
+            <span className="flex-1 text-left text-gray-400 group-hover:text-gray-300 truncate">
+              Search citation, statute, ratio...
+            </span>
+            <kbd className="inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono bg-white/10 text-gray-300 border border-white/20 rounded shadow-xs ml-2">
+              {isMac ? '⌘K' : 'Ctrl+K'}
+            </kbd>
+          </button>
 
           {/* Right Action Menu */}
           <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={() => setQuickSearchOpen(true)}
+              className="sm:hidden p-2 text-gray-300 hover:text-white rounded hover:bg-white/10"
+              aria-label="Search"
+            >
+              <Search className="w-4 h-4" />
+            </button>
             {isAdminOrEditor && (
               <Link
                 href="/admin"
@@ -193,7 +266,9 @@ export default function Header() {
               <div className="flex items-center space-x-2 text-xs">
                 <Link
                   href="/login"
-                  className="px-3 py-1.5 text-white hover:text-white/80 transition-colors font-medium"
+                  className={`px-3 py-1.5 rounded transition-colors font-medium ${
+                    pathname === '/login' ? 'bg-[#007398] text-white font-semibold' : 'text-white hover:text-white/80'
+                  }`}
                 >
                   Sign In
                 </Link>
@@ -208,6 +283,13 @@ export default function Header() {
           </div>
         </div>
       </div>
+
+      {/* Quick Search Modal accessible anywhere via ⌘K or Ctrl+K */}
+      <QuickSearchModal
+        isOpen={quickSearchOpen}
+        onClose={() => setQuickSearchOpen(false)}
+        isMac={isMac}
+      />
     </header>
   );
 }
